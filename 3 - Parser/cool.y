@@ -155,21 +155,21 @@
     %type <feature> feature
 
     %type <formal> formal
-    %type <formals> formal_list_helper /*chon qabl avalin tarif moteqayer , vojood nadarad*/
+    %type <formals> formal_list_helper /* Because there is no comma before the first variable, I used this additional non-terminal to handle the formal list. */
     %type <formals> formal_list
 
     %type <expression> expression
     %type <expressions> expression_list_multi 
     %type <expressions> expression_list_dispatch
-    %type <expressions> expression_list_dispatch_helper /*chon qabl avalin expression dar seda zadan tavabe , vojood nadarad*/
+    %type <expressions> expression_list_dispatch_helper /* I used this additional non-terminal to handle the formal list because there is no comma before the first expression in calling a function. */
     %type <expression> first_let_expression_handler
 
     %type <cases> case_list
 
     
-    /*tartib olaviat ha motabegh safhe 17 cool manual ast*/
-    %left Lowe /* baraye handel kardan expression ha thar let*/
-    %right ASSIGN /* chon dara assignment ha bayad az rast be chap moteghayer ha ro avaz kard*/
+    /* The order of priorities is by the COOL manual. */
+    %left Lowe /* We need this to handle expressions in let instruction. */
+    %right ASSIGN /* Unlike other operators, we should do the assignment right to the left. */
     %left NOT
     %nonassoc LE '<' '='
     %left '+' '-'
@@ -181,7 +181,9 @@
     %left High
     
     %%
+
     program
+    /* program ::= [[class; ]]+ */
     : class_list
     { 
       @$ = @1; 
@@ -190,317 +192,190 @@
     ;
 
 
-    class
-    /*agar classe az class digari drive nashe darvaghe az Object drive mishe */
-    /*Object rishe derakht drive shodan class ha ast*/
+    class 
+    /* If no parent is specified, the class inherits from the Object class. */
     : CLASS TYPEID '{' feature_list '}' ';'
-    { 
-      $$ = class_($2, idtable.add_string("Object"), $4, stringtable.add_string(curr_filename));
-    }
+      { $$ = class_($2, idtable.add_string("Object"), $4, stringtable.add_string(curr_filename)); }
     | CLASS TYPEID INHERITS TYPEID '{' feature_list '}' ';'
-    { 
-      $$ = class_($2, $4, $6, stringtable.add_string(curr_filename));
-    }
+      { $$ = class_($2, $4, $6, stringtable.add_string(curr_filename)); }
     | CLASS TYPEID error '{' feature_list '}' ';'
-    { 
-      yyerrok;
-    }
+      { yyerrok;}
     | CLASS TYPEID INHERITS error ';'
-    { 
-      yyerrok;
-    }
+      { yyerrok; }
     | CLASS TYPEID INHERITS error '{' feature_list '}' ';'
-    { 
-      yyerrok;
-    }
-    /* agar class e eshtebah bood parsing az class badi shoroo shavad va error hara begirad*/
+      { yyerrok; }
+    /* If there is an error in the definition of the class, start parsing from the next class. */
     /*| CLASS error '{' feature_list '}' ';'  
-    {
-      yyerrok;
-    }*/
+      { yyerrok; }*/
     ;
 
     class_list
     : class
-    { 
+      { 
       $$ = single_Classes($1);
       parse_results = $$;
-    }
+      }
     | class class_list
-    { 
-      $$ = append_Classes(single_Classes($1), $2); 
-      parse_results = $$;
-    }
-    /* agar class e eshtebah bood parsing az class badi shoroo shavad va error hara begirad*/
+      { 
+        $$ = append_Classes(single_Classes($1), $2); 
+        parse_results = $$;
+      }
+    /* If there is an error in the definition of the class, start parsing from the next class. */
     /*| error ';'
-    {
-      yyerrok;
-    }*/
+      { yyerrok; }*/
     ;
     
     feature
     : OBJECTID '(' formal_list ')' ':' TYPEID '{' expression '}' ';'
-    {
-      $$ = method($1, $3, $6, $8);
-    }
+      { $$ = method($1, $3, $6, $8); }
     | OBJECTID '(' error')' ':' TYPEID '{' expression '}' ';'
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | OBJECTID '(' formal_list ')' ':' TYPEID '{' error '}' ';'
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | error '(' formal_list ')' ':' TYPEID '{' expression '}' ';'
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | OBJECTID ':' TYPEID ';'
-    {
-      $$ = attr($1, $3, no_expr());
-    }
+      { $$ = attr($1, $3, no_expr()); }
     | OBJECTID ':' error ';'
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | OBJECTID ':' TYPEID ASSIGN expression ';'
-    {
-      $$ = attr($1, $3, $5);
-    }
+      { $$ = attr($1, $3, $5); }
     | OBJECTID ':' TYPEID
-    {
-      /*yyerror("syntax error");*/
-      yyerrok;
-    }
+      {
+        /*yyerror("syntax error");*/
+        yyerrok;
+      }
     ;
 
     feature_list
     :	
-    {
-      $$ = nil_Features();
-    }
+      { $$ = nil_Features(); }
     | feature feature_list
-    {
-      $$ = append_Features(single_Features($1), $2);
-    }
+      { $$ = append_Features(single_Features($1), $2); }
     /*| error feature_list
-    {
-      yyerrok;
-    }*/
+      { yyerrok; }*/
     ;
 
     formal
     : OBJECTID ':' TYPEID
-    {
-      $$ = formal($1, $3);
-    }
+      { $$ = formal($1, $3); }
     ;
 
     formal_list_helper
     :
-    {
-      $$ = nil_Formals();
-    }
+      { $$ = nil_Formals(); }
     | ',' formal formal_list_helper 
-    {
-        $$ = append_Formals(single_Formals($2), $3);
-    }
+      { $$ = append_Formals(single_Formals($2), $3); }
     ;
 
     formal_list
     :
-    {
-      $$ = nil_Formals();
-    }
+      { $$ = nil_Formals(); }
     | formal formal_list_helper
-    {
-      $$ = append_Formals(single_Formals($1), $2);
-    }
+      { $$ = append_Formals(single_Formals($1), $2); }
     ;
 
     expression_list_multi
     : expression ';'
-    {
-      $$ = single_Expressions($1);
-    }
+      { $$ = single_Expressions($1); }
     | expression ';' expression_list_multi
-    {
-      $$ = append_Expressions(single_Expressions($1), $3);
-    }
+      { $$ = append_Expressions(single_Expressions($1), $3); }
     | error ';'
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | error ';' expression_list_multi
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     ;
 
     expression_list_dispatch_helper
     : 
-    {
-      $$ = nil_Expressions();
-    }
+      { $$ = nil_Expressions(); }
     | ',' expression expression_list_dispatch_helper
-    {
-      $$ = append_Expressions(single_Expressions($2), $3);
-    }
+      { $$ = append_Expressions(single_Expressions($2), $3); }
     ;
 
     expression_list_dispatch
     :
-    {
-      $$ = nil_Expressions();
-    }
+      { $$ = nil_Expressions(); }
     | expression expression_list_dispatch_helper
-    {
-      $$ = append_Expressions(single_Expressions($1), $2);
-    }
+      { $$ = append_Expressions(single_Expressions($1), $2); }
     ;
 
-    /*dar parser ba (let x y in exp) be soorat (let x in let y in exp) raftar mishavad*/
+    /* Parsing (let x y in exp) is similar to the parsing of (let x in let y in exp). */
     first_let_expression_handler
-    : OBJECTID ':' TYPEID IN expression %prec Lowe /*chon bayad ta akhar expreshon let khande shavad (let x in 2 + 3)*/
-    { 
-      $$ = let($1, $3, no_expr(), $5); 
-    }
-    | OBJECTID ':' TYPEID ASSIGN expression IN expression %prec Lowe /*mesl balayee*/
-    { 
-      $$ = let($1, $3, $5, $7);
-    }
+    : OBJECTID ':' TYPEID IN expression %prec Lowe /* It is necessary to read up to the end of the let's expressions. */
+      { $$ = let($1, $3, no_expr(), $5); }
+    | OBJECTID ':' TYPEID ASSIGN expression IN expression %prec Lowe
+      { $$ = let($1, $3, $5, $7); }
     | OBJECTID ':' TYPEID ',' first_let_expression_handler               
-    { 
-      $$ = let($1, $3, no_expr(), $5); 
-    }
+      { $$ = let($1, $3, no_expr(), $5); }
     | OBJECTID ':' TYPEID ASSIGN expression ',' first_let_expression_handler 
-    { 
-      $$ = let($1, $3, $5, $7);
-    }
+      { $$ = let($1, $3, $5, $7); }
     | error ','
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     ;
 
 
     case_list
     : OBJECTID ':' TYPEID DARROW expression ';'
-    {
-      $$ = single_Cases(branch($1, $3, $5));
-    }
+      { $$ = single_Cases(branch($1, $3, $5)); }
     | case_list OBJECTID ':' TYPEID DARROW expression ';'
-    {
-      $$ = append_Cases($1, single_Cases(branch($2, $4, $6)));
-    }
+      { $$ = append_Cases($1, single_Cases(branch($2, $4, $6))); }
     ;
 
     expression
     : OBJECTID ASSIGN expression
-    {
-      $$ = assign($1, $3);
-    }
+      { $$ = assign($1, $3); }
     | expression '.' OBJECTID '(' expression_list_dispatch ')'
-    {
-      $$ = dispatch($1, $3, $5);
-    }
+      { $$ = dispatch($1, $3, $5); }
     | expression '@' TYPEID '.' OBJECTID '(' expression_list_dispatch ')'
-    {
-      $$ = static_dispatch($1, $3, $5, $7);
-    }
-    /*darvaghe f(x) shekl kootah shode self.f(x) ast*/
+      { $$ = static_dispatch($1, $3, $5, $7); }
+    /* Actually, f(x) is the shortened form of the self.f(x). */
     | OBJECTID '(' expression_list_dispatch ')'
-    {
-      $$ = dispatch(object(idtable.add_string("self")), $1, $3);
-    }
+      { $$ = dispatch(object(idtable.add_string("self")), $1, $3); }
     | IF expression THEN expression ELSE expression FI
-    {
-      $$ = cond($2, $4, $6);
-    }
+      { $$ = cond($2, $4, $6); }
     | WHILE expression LOOP expression POOL
-    {
-      $$ = loop($2, $4);
-    }
+      { $$ = loop($2, $4); }
     | '{' expression_list_multi '}'
-    {
-      $$ = block($2);
-    }
+      { $$ = block($2); }
     | LET first_let_expression_handler
-    {
-       $$ = $2; 
-    }
+      { $$ = $2; }
     | CASE expression OF case_list ESAC
-    {
-      $$ = typcase($2, $4);
-    }
+      { $$ = typcase($2, $4); }
     | CASE error OF case_list ESAC
-    {
-      yyerrok;
-    }
+      { yyerrok; }
     | NEW TYPEID
-    {
-      $$ = new_($2);
-    }
+      { $$ = new_($2); }
     | ISVOID expression
-    {
-      $$ = isvoid($2);
-    }
+      { $$ = isvoid($2); }
     | expression '+' expression
-    {
-      $$ = plus($1, $3);
-    }
+      {$$ = plus($1, $3); }
     | expression '-' expression
-    { 
-      $$ = sub($1, $3); 
-    }
+      { $$ = sub($1, $3); }
     | expression '*' expression 
-    { 
-      $$ = mul($1, $3);
-    }
+      { $$ = mul($1, $3); }
     | expression '/' expression     
-    { 
-      $$ = divide($1, $3);
-    }
+      { $$ = divide($1, $3); }
     | '~' expression                
-    { 
-      $$ = neg($2);
-    }
+      { $$ = neg($2); }
     | expression '<' expression     
-    { 
-      $$ = lt($1, $3);
-    }
+      { $$ = lt($1, $3); }
     | expression LE expression      
-    { 
-      $$ = leq($1, $3);
-    }
+      { $$ = leq($1, $3); }
     | expression '=' expression     
-    { 
-      $$ = eq($1, $3);
-    }
+      { $$ = eq($1, $3); }
     | NOT expression                
-    { 
-      $$ = comp($2);
-    }
+      { $$ = comp($2); }
     | '(' expression ')'            
-    { 
-      $$ = $2;
-    }
+      { $$ = $2; }
     | OBJECTID
-    { 
-      $$ = object($1);
-    }
+      { $$ = object($1); }
     | INT_CONST
-    {
-      $$ = int_const($1);
-    }
+      { $$ = int_const($1); }
     | STR_CONST
-    { 
-      $$ = string_const($1); 
-    }
+      {  $$ = string_const($1); }
     | BOOL_CONST
-    { 
-      $$ = bool_const($1); 
-    }
+      {  $$ = bool_const($1); }
     ;
     
     %%

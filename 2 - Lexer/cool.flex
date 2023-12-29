@@ -49,42 +49,42 @@ extern YYSTYPE cool_yylval;
  * Define names for regular expressions here.
  */
 /*key words*/
-Class 		?i:class
-Else 		?i:else
-False 		f?i:alse
-Fi 		?i:fi
-If 		?i:if
-In 		?i:in
-Inherits 	?i:inherits
-IsVoid 	?i:isvoid
-Let 		?i:let
-Loop 		?i:loop
-Pool 		?i:pool
-Then 		?i:then
-While 		?i:while
-Case 		?i:case
-Esac 		?i:esac
-New 		?i:new
-Of 		?i:of
-Not 		?i:not
-True 		t?i:rue
+Class 		(?i:class)
+Else 		(?i:else)
+False 		(f?i:alse)
+Fi 			(?i:fi)
+If 			(?i:if)
+In 			(?i:in)
+Inherits 	(?i:inherits)
+IsVoid 		(?i:isvoid)
+Let 		(?i:let)
+Loop 		(?i:loop)
+Pool 		(?i:pool)
+Then 		(?i:then)
+While 		(?i:while)
+Case 		(?i:case)
+Esac 		(?i:esac)
+New 		(?i:new)
+Of 			(?i:of)
+Not 		(?i:not)
+True 		(t?i:rue)
 
 /*symbols*/
-DArrow 	=>
-LE 		<=
-Assignment 	<-
-Symbol 	[+\-*/=<.,;:~()@{}]
+DArrow 		"=>"
+LE 			"<="
+Assignment 	"<-"
+Symbol 		[+\-*/=<.,;:~()@{}]
 
 /*types*/
 Integer 	[0-9]+
-TypeID 	[A-Z][A-Za-z0-9_]*
+TypeID 		[A-Z][A-Za-z0-9_]*
 ObjectID 	[a-z][A-Za-z0-9_]*
-StringSE \"
-%x String
+StringSE 	"\""
+%x String   // " ... "
 
 /*whitespaces*/
 WhiteSpace 	[ \f|\r|\t|\v]+
-NewLine 	\n 
+NewLine 	"\n" 
 
 /*errors*/
 Invalid 	[^a-zA-Z0-9_ \f\r\t\v\n+\-*/=<.,;:~()@{}]
@@ -92,8 +92,8 @@ Invalid 	[^a-zA-Z0-9_ \f\r\t\v\n+\-*/=<.,;:~()@{}]
 /*comments*/
 CommentS 	"(*"
 CommentE	"*)"
-%x Comment
-%x InlineComment
+%x Comment  // -- ...
+%x InlineComment // (* ... *)
 
 %%
 
@@ -139,19 +139,19 @@ CommentE	"*)"
   */
 
 {Class} 	{return CLASS;}
-{Else} 	{return ELSE;}
+{Else} 		{return ELSE;}
 {Fi} 		{return FI;}          
 {If} 		{return IF;}            
 {In} 		{return IN;}              
 {Inherits} 	{return INHERITS;}      
 {IsVoid} 	{return ISVOID;}        
 {Let} 		{return LET;}            
-{Loop} 	{return LOOP;}         
-{Pool} 	{return POOL;}    
-{Then} 	{return THEN;}           
+{Loop} 		{return LOOP;}         
+{Pool} 		{return POOL;}    
+{Then} 		{return THEN;}           
 {While} 	{return WHILE;}
-{Case} 	{return CASE;}          
-{Esac} 	{return ESAC;}           
+{Case} 		{return CASE;}          
+{Esac} 		{return ESAC;}           
 {New} 		{return NEW;}        
 {Of} 		{return OF;}              
 {Not} 		{return NOT;}
@@ -163,7 +163,6 @@ CommentE	"*)"
 	yylval.boolean = false;
 	return BOOL_CONST;
 }
-
 {DArrow} {return DARROW;}
 {LE} {return LE;}
 {Assignment} {return ASSIGN;}

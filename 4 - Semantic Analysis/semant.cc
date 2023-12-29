@@ -271,7 +271,6 @@ void check_inheritance_graph()
     make_LCA_table(Object, Object);
     for (std::map<Symbol, Class_>::iterator iter = class_table.begin(); iter != class_table.end(); iter++)
     {
-        // cout << iter->first->get_string() << " " << LCA_table[iter->first][0]->get_string() << endl;
         if (visit[iter->first] != true)
         {
             semant_error(iter->second) << "error!\n";
@@ -279,6 +278,12 @@ void check_inheritance_graph()
     }
 }
 
+/*
+    I used an advanced but straightforward algorithm to find the LCA in O(log n).
+    However, using this algorithm is unnecessary, and you can use a loop to find LCA.
+    The description of the algorithm I used can be found in the following link.
+    https://cp-algorithms.com/graph/lca_binary_lifting.html
+*/
 void make_LCA_table(Symbol v, Symbol par)
 {
     visit[v] = true;
@@ -655,7 +660,6 @@ Symbol typcase_class::inference_type()
     for (int i = cases->first(); cases->more(i); i = cases->next(i))
     {
         branch_class *branch = static_cast<branch_class *>(cases->nth(i));
-        // cout << branch->type_decl->get_string() << endl;
         Symbol branch_type = branch->inference_type();
         if (check_duplicate.find(branch->get_type_decl()) != check_duplicate.end())
         {
@@ -925,7 +929,6 @@ static void check_features()
 {
     for (std::map<Symbol, Class_>::iterator iter = class_table.begin(); iter != class_table.end(); iter++)
     {
-        // cout << iter->first->get_string() << endl;
         if (iter->first == Object || iter->first == IO || iter->first == Int || iter->first == Bool || iter->first == Str)
         {
             continue;
@@ -959,7 +962,6 @@ static void check_features()
         Features features = curr_class->get_features();
         for (int i = features->first(); features->more(i); i = features->next(i))
         {
-            // cout << features->nth(i)->get_name()->get_string() << endl;
             if (features->nth(i)->is_method())
             {
                 method_class *curr_method = static_cast<method_class *>(features->nth(i));
@@ -992,12 +994,10 @@ static void check_features()
                         }
                         temp = LCA_table[temp][0];
                     }
-                    // cout << features->nth(i)->get_name()->get_string() << " 1" << endl;
                     if (method == NULL)
                     {
                         break;
                     }
-                    // cout << "2" << endl;
                     if (curr_method->get_return_type() != method->get_return_type())
                     {
                         semant_error(curr_class->get_filename(), curr_method) << "error!\n";
@@ -1019,7 +1019,6 @@ static void check_features()
                             semant_error(curr_class->get_filename(), curr_method) << "error!\n";
                         }
                     }
-                    // cout << "3" << endl;
                     if (curr == Object)
                     {
                         break;
